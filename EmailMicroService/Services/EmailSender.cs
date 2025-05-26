@@ -18,11 +18,22 @@ public class EmailSender : IEmailSender
     public async Task SendEmailAsync(string to, string subject, string body)
     {
         var client = new SendGridClient(_settings.SendGridApiKey);
-        var from = new EmailAddress(_settings.FromEmail, _settings.FromName);
+        var from = new EmailAddress(_settings.FromEmail, _settings.FromName ?? "Ventixe");
         var toAddress = new EmailAddress(to);
         var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, body, body);
-        await client.SendEmailAsync(msg);
+
+        var response = await client.SendEmailAsync(msg);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Body.ReadAsStringAsync();
+            Console.WriteLine($"❌ SendGrid ERROR: {response.StatusCode} - {errorBody}");
+            throw new Exception("SendGrid failed: " + errorBody);
+        }
+
+        Console.WriteLine($"✅ Email sent to {to}");
     }
+
 
     public async Task SendConfirmationEmailAsync(string to, string confirmationUrl)
     {

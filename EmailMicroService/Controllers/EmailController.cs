@@ -18,9 +18,18 @@ public class EmailController : ControllerBase
     [HttpPost("send-confirm-email-update")]
     public async Task<IActionResult> SendConfirmationEmailUpdate([FromBody] EmailConfirmationRequestDto request)
     {
-        await _emailSender.SendConfirmationEmailAsync(request.To, request.ConfirmationUrl);
-        return Ok("Confirmation email sent.");
+        try
+        {
+            await _emailSender.SendConfirmationEmailAsync(request.To, request.ConfirmationUrl);
+            return Ok("✅ Email sent.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Internal error: {ex.Message}");
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
+
 
     [HttpPost("send-generic")]
     public async Task<IActionResult> SendGeneric([FromBody] EmailRequestDto request)

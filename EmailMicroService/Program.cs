@@ -8,6 +8,16 @@ var builder = WebApplication.CreateBuilder(args);
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
+// Efter Key Vault
+string apiKey = builder.Configuration["SendGrid--ApiKey"];
+string fromEmail = builder.Configuration["SendGrid--From"];
+string fromName = builder.Configuration["SendGrid--FromName"];
+
+Console.WriteLine($"🔐 SendGrid--ApiKey is {(string.IsNullOrEmpty(apiKey) ? "MISSING" : "LOADED")}");
+Console.WriteLine($"🔐 SendGrid--From: {fromEmail}");
+Console.WriteLine($"🔐 SendGrid--FromName: {fromName}");
+
+
 // 2. Lägg till EmailSender – använder IConfiguration direkt
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 

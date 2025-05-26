@@ -1,4 +1,4 @@
-using EmailService.Configuration;
+﻿using EmailService.Configuration;
 using EmailService.Services;
 using Azure.Identity;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
@@ -9,18 +9,29 @@ var builder = WebApplication.CreateBuilder(args);
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-// 2. Registrera EmailSettings fr�n Key Vault
+// 2. Registrera EmailSettings från Key Vault
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("SendGrid"));
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 
-// 3. Swagger och Controllers
+// 3. Lägg till CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// 4. Lägg till Swagger och Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 4. Middleware (Swagger alltid aktiv)
+// 5. Middleware
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -29,6 +40,9 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAll"); // 🟢 Aktiverar CORS före auth och routing
+
 app.UseAuthorization();
 app.MapControllers();
 

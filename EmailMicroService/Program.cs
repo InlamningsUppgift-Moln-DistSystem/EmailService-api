@@ -20,12 +20,13 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 4. Middleware
-if (app.Environment.IsDevelopment())
+// 4. Middleware (Swagger alltid aktiv)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "EmailService API V1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

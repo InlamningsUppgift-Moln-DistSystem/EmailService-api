@@ -16,9 +16,9 @@ namespace EmailService.Services
 
         public EmailSender(IConfiguration config)
         {
-            _apiKey = config["SendGrid--ApiKey"];
-            _fromEmail = config["SendGrid--From"];
-            _fromName = config["SendGrid--FromName"] ?? "EmailService";
+            _apiKey = config["SendGrid:ApiKey"];
+            _fromEmail = config["SendGrid:From"];
+            _fromName = config["SendGrid:FromName"];
 
             var baseDir = AppContext.BaseDirectory;
             _logPath = Path.Combine(baseDir, "logs", "email-debug.txt");

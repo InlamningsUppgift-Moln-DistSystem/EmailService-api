@@ -20,15 +20,20 @@ public class EmailController : ControllerBase
     {
         try
         {
+            Console.WriteLine($"📩 Incoming email confirmation request for: {request.To}");
+
             await _emailSender.SendConfirmationEmailAsync(request.To, request.ConfirmationUrl);
-            return Ok("✅ Email sent.");
+
+            Console.WriteLine("✅ Email sent without exception");
+            return Ok("Email sent.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Internal error: {ex.Message}");
+            Console.WriteLine($"❌ Exception while sending email: {ex.Message}");
             return StatusCode(500, new { error = ex.Message });
         }
     }
+
 
 
     [HttpPost("send-generic")]

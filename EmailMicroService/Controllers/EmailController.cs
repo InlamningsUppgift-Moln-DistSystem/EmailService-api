@@ -53,15 +53,16 @@ public class EmailController : ControllerBase
     [HttpGet("debug-sendgrid")]
     public IActionResult DebugSendGrid()
     {
-        var apiKey = _config["SendGrid--ApiKey"];
-        var from = _config["SendGrid--From"];
-        var fromName = _config["SendGrid--FromName"];
+        string apiKey = _config["SendGrid--ApiKey"];
+        string fromEmail = _config["SendGrid--From"];
+        string fromName = _config["SendGrid--FromName"];
 
         return Ok(new
         {
-            ApiKey = string.IsNullOrWhiteSpace(apiKey) ? "❌ MISSING" : "✅ LOADED",
-            From = string.IsNullOrWhiteSpace(from) ? "❌ MISSING" : from,
-            FromName = string.IsNullOrWhiteSpace(fromName) ? "❌ MISSING" : fromName
+            ApiKeyStatus = string.IsNullOrEmpty(apiKey) ? "❌ Missing" : $"✅ Loaded ({apiKey.Length} chars)",
+            FromEmail = string.IsNullOrEmpty(fromEmail) ? "❌ Missing" : fromEmail,
+            FromName = string.IsNullOrEmpty(fromName) ? "⚠️ Empty (defaulting to 'EmailService')" : fromName
         });
     }
+
 }

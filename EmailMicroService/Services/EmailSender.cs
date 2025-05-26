@@ -57,10 +57,20 @@ namespace EmailService.Services
 
         public async Task SendConfirmationEmailAsync(string to, string confirmationUrl)
         {
+            var userName = to.Split('@')[0]; // basic fallback
             Log($"↪️ Preparing confirmation email to {to}");
-            var body = $"Please confirm your email by clicking this link: {confirmationUrl}";
-            await SendEmailAsync(to, "Confirm your email", body);
+
+            var body = $"""
+        <p>Hi {userName},</p>
+        <p>Please confirm your account by clicking the link below:</p>
+        <p><a href="{confirmationUrl}">{confirmationUrl}</a></p>
+        <br/>
+        <p>Ventixe Team</p>
+    """;
+
+            await SendEmailAsync(to, "Confirm your Ventixe account", body);
         }
+
 
         private void Log(string message)
         {

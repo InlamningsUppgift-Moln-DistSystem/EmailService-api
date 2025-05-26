@@ -1,0 +1,6 @@
+@EmailMicroService_HostAddress = http://localhost:5274
+
+GET {{EmailMicroService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -9,10 +9,12 @@ namespace EmailService.Controllers;
 public class EmailController : ControllerBase
 {
     private readonly IEmailSender _emailSender;
+    private readonly IConfiguration _config;
 
-    public EmailController(IEmailSender emailSender)
+    public EmailController(IEmailSender emailSender, IConfiguration config)
     {
         _emailSender = emailSender;
+        _config = config;
     }
 
     [HttpPost("send-confirm-email-update")]
@@ -34,12 +36,32 @@ public class EmailController : ControllerBase
         }
     }
 
-
-
     [HttpPost("send-generic")]
     public async Task<IActionResult> SendGeneric([FromBody] EmailRequestDto request)
     {
-        await _emailSender.SendEmailAsync(request.To, request.Subject, request.Body);
-        return Ok("Email sent.");
+        try
+        {
+            await _emailSender.SendEmailAsync(request.To, request.Subject, request.Body);
+            return Ok("Email sent.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("debug-sendgrid")]
+    public IActionResult DebugSendGrid()
+    {
+        var apiKey = _config["SendGrid--ApiKey"];
+        var from = _config["SendGrid--From"];
+        var fromName = _config["SendGrid--FromName"];
+
+        return Ok(new
+        {
+            ApiKey = string.IsNullOrWhiteSpace(apiKey) ? "❌ MISSING" : "✅ LOADED",
+            From = string.IsNullOrWhiteSpace(from) ? "❌ MISSING" : from,
+            FromName = string.IsNullOrWhiteSpace(fromName) ? "❌ MISSING" : fromName
+        });
     }
 }

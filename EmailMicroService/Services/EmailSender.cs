@@ -12,13 +12,16 @@ namespace EmailService.Services
         private readonly string _apiKey;
         private readonly string _fromEmail;
         private readonly string _fromName;
-        private readonly string _logPath = @"D:\home\logs\email-debug.txt";
+        private readonly string _logPath;
 
         public EmailSender(IConfiguration config)
         {
             _apiKey = config["SendGrid--ApiKey"];
             _fromEmail = config["SendGrid--From"];
             _fromName = config["SendGrid--FromName"] ?? "EmailService";
+
+            var baseDir = AppContext.BaseDirectory;
+            _logPath = Path.Combine(baseDir, "logs", "email-debug.txt");
 
             Log($"Constructor loaded. ApiKey: {Mask(_apiKey)}, From: {_fromEmail}, FromName: {_fromName}");
 
@@ -64,11 +67,13 @@ namespace EmailService.Services
             try
             {
                 var entry = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] {message}{Environment.NewLine}";
+                var dir = Path.GetDirectoryName(_logPath);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
                 File.AppendAllText(_logPath, entry);
             }
             catch
             {
-                // Avoid crash if logging fails
+                // Silent fail
             }
         }
 

@@ -1,47 +1,55 @@
-﻿using EmailService.Configuration;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Configuration;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-using System.Net.Mail;
+using System;
+using System.Threading.Tasks;
 
-namespace EmailService.Services;
-
-public class EmailSender : IEmailSender
+namespace EmailService.Services
 {
-    private readonly EmailSettings _settings;
-
-    public EmailSender(IOptions<EmailSettings> options)
+    public class EmailSender : IEmailSender
     {
-        _settings = options.Value;
-    }
+        private readonly string _apiKey;
+        private readonly string _fromEmail;
+        private readonly string _fromName;
 
-    public async Task SendEmailAsync(string to, string subject, string body)
-    {
-        Console.WriteLine($"📧 Trying to send email to {to} with subject '{subject}'");
-
-        var client = new SendGridClient(_settings.SendGridApiKey);
-        var from = new EmailAddress(_settings.FromEmail, _settings.FromName);
-        var toAddress = new EmailAddress(to);
-        var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, body, body);
-
-        var response = await client.SendEmailAsync(msg);
-
-        var responseBody = await response.Body.ReadAsStringAsync();
-        Console.WriteLine($"📬 SendGrid response: {response.StatusCode} - {responseBody}");
-
-        if (!response.IsSuccessStatusCode)
+        public EmailSender(IConfiguration config)
         {
-            throw new Exception($"SendGrid error: {response.StatusCode} - {responseBody}");
+            _apiKey = config["SendGrid--ApiKey"];
+            _fromEmail = config["SendGrid--From"];
+            _fromName = config["SendGrid--FromName"] ?? "EmailService";
+
+            if (string.IsNullOrEmpty(_apiKey) || string.IsNullOrEmpty(_fromEmail))
+            {
+                throw new Exception("❌ Missing SendGrid configuration values from Key Vault.");
+            }
         }
 
-        Console.WriteLine($"✅ Email successfully sent to {to}");
-    }
+        public async Task SendEmailAsync(string to, string subject, string body)
+        {
+            Console.WriteLine($"📧 Sending email to {to} with subject: '{subject}'");
 
+            var client = new SendGridClient(_apiKey);
+            var from = new EmailAddress(_fromEmail, _fromName);
+            var toAddress = new EmailAddress(to);
+            var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, body, body);
 
+            var response = await client.SendEmailAsync(msg);
+            var responseBody = await response.Body.ReadAsStringAsync();
 
-    public async Task SendConfirmationEmailAsync(string to, string confirmationUrl)
-    {
-        var body = $"Please confirm your email by clicking this link: {confirmationUrl}";
-        await SendEmailAsync(to, "Confirm your email", body);
+            Console.WriteLine($"📬 SendGrid response: {response.StatusCode} - {responseBody}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"❌ Failed to send email: {response.StatusCode} - {responseBody}");
+            }
+
+            Console.WriteLine($"✅ Email successfully sent to {to}");
+        }
+
+        public async Task SendConfirmationEmailAsync(string to, string confirmationUrl)
+        {
+            var body = $"Please confirm your email by clicking this link: {confirmationUrl}";
+            await SendEmailAsync(to, "Confirm your email", body);
+        }
     }
 }

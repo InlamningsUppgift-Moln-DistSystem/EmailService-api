@@ -2,33 +2,37 @@
 using Azure.Identity;
 using EmailMicroService.Services; // ← namespace för listenern
 using EmailService.Services;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Console.WriteLine("Program.cs start - innan Key Vault laddning");
+// Skapa logger tidigt
+var logger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Program");
+
+logger.LogInformation("Program.cs start - innan Key Vault laddning");
 
 // 1. Key Vault – ladda in känsliga värden
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
-Console.WriteLine($"KeyVaultUrl från konfiguration: {keyVaultUrl}");
+logger.LogInformation("KeyVaultUrl från konfiguration: {KeyVaultUrl}", keyVaultUrl);
 
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-Console.WriteLine("Key Vault laddad");
+logger.LogInformation("Key Vault laddad");
 
 // 2. För debug/loggning
 string apiKey = builder.Configuration["SendGrid--ApiKey"];
 string fromEmail = builder.Configuration["SendGrid--From"];
 string fromName = builder.Configuration["SendGrid--FromName"];
 
-Console.WriteLine($"🔐 SendGrid--ApiKey is {(string.IsNullOrEmpty(apiKey) ? "MISSING" : "LOADED")}");
-Console.WriteLine($"🔐 SendGrid--From: {fromEmail}");
-Console.WriteLine($"🔐 SendGrid--FromName: {fromName}");
+logger.LogInformation("🔐 SendGrid--ApiKey is {Status}", string.IsNullOrEmpty(apiKey) ? "MISSING" : "LOADED");
+logger.LogInformation("🔐 SendGrid--From: {FromEmail}", fromEmail);
+logger.LogInformation("🔐 SendGrid--FromName: {FromName}", fromName);
 
 // 3. Dependency Injection
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddHostedService<EmailQueueListener>(); // 👈 Service Bus listener
 
-Console.WriteLine("Tjänster registrerade");
+logger.LogInformation("Tjänster registrerade");
 
 // 4. CORS – tillåt alla origins (just nu)
 builder.Services.AddCors(options =>
@@ -46,11 +50,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-Console.WriteLine("Bygger app");
+logger.LogInformation("Bygger app");
 
 var app = builder.Build();
 
-Console.WriteLine("App byggd - innan Middleware pipeline");
+logger.LogInformation("App byggd - innan Middleware pipeline");
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -59,18 +63,18 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-Console.WriteLine("Swagger UI satt");
+logger.LogInformation("Swagger UI satt");
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthorization();
 
-Console.WriteLine("Middleware konfigurerat");
+logger.LogInformation("Middleware konfigurerat");
 
 app.MapControllers();
 
-Console.WriteLine("MapControllers anropat");
+logger.LogInformation("MapControllers anropat");
 
-Console.WriteLine("App started");
+logger.LogInformation("App started");
 
 app.Run();

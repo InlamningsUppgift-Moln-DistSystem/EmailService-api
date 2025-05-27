@@ -1,6 +1,5 @@
 ﻿using Azure.Messaging.ServiceBus;
 using EmailMicroService.DTOs;
-using EmailService.DTOs;
 using EmailService.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -69,8 +68,9 @@ namespace EmailMicroService.Services
 
                 if (message != null)
                 {
-                    await emailSender.SendConfirmationEmailAsync(message.To, message.ConfirmationUrl);
+                    await emailSender.SendEmailAsync(message.To, message.Subject, message.Body);
                     await args.CompleteMessageAsync(args.Message);
+
                     Console.WriteLine($"✅ Email processed and completed for {message.To}");
                     _logger.LogInformation("✅ Email processed and completed for {To}", message.To);
                 }

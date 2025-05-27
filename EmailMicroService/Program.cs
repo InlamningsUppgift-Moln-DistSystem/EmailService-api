@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging.AzureAppServices;
 var builder = WebApplication.CreateBuilder(args);
 
 // --- LOGGING KONFIGURATION ---
-// Rensa gamla providers och lägg till Console + Azure App Service Diagnostics (log stream)
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddAzureWebAppDiagnostics();
@@ -41,7 +40,10 @@ logger.LogInformation("🔐 SendGrid--From: {FromEmail}", fromEmail);
 logger.LogInformation("🔐 SendGrid--FromName: {FromName}", fromName);
 
 // --- Dependency Injection ---
+// IEmailSender som scoped (om den använder scoped resurser, annars singleton)
 builder.Services.AddScoped<IEmailSender, EmailSender>();
+
+// EmailQueueListener som hosted service singleton, men injicerar IServiceProvider istället för IEmailSender direkt
 builder.Services.AddHostedService<EmailQueueListener>();
 
 logger.LogInformation("Tjänster registrerade");

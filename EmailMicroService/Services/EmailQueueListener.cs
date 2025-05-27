@@ -12,12 +12,12 @@ namespace EmailMicroService.Services
     public class EmailQueueListener : BackgroundService
     {
         private readonly ServiceBusProcessor _processor;
-        private readonly IEmailSender _emailSender;
+        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<EmailQueueListener> _logger;
 
-        public EmailQueueListener(IConfiguration config, IEmailSender emailSender, ILogger<EmailQueueListener> logger)
+        public EmailQueueListener(IConfiguration config, IServiceProvider serviceProvider, ILogger<EmailQueueListener> logger)
         {
-            _emailSender = emailSender;
+            _serviceProvider = serviceProvider;
             _logger = logger;
 
             var connectionString = config["ServiceBus:ConnectionString"];
@@ -56,6 +56,9 @@ namespace EmailMicroService.Services
 
         private async Task HandleMessageAsync(ProcessMessageEventArgs args)
         {
+            using var scope = _serviceProvider.CreateScope();
+            var emailSender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
+
             try
             {
                 var body = args.Message.Body.ToString();
@@ -66,9 +69,10 @@ namespace EmailMicroService.Services
 
                 if (message != null)
                 {
-                    await _emailSender.SendConfirmationEmailAsync(message.To, message.ConfirmationUrl);
+                    await emailSender.SendConfirmationEmailAsync(message.To, message.ConfirmationUrl);
                     await args.CompleteMessageAsync(args.Message);
                     Console.WriteLine($"✅ Email processed and completed for {message.To}");
+                    _logger.LogInformation("✅ Email processed and completed for {To}", message.To);
                 }
             }
             catch (Exception ex)

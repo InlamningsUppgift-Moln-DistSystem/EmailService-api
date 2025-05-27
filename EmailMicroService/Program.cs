@@ -47,6 +47,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "EmailService API V1");
     c.RoutePrefix = "swagger";
 });
+Console.WriteLine("App started");
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");

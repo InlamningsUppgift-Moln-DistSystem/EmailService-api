@@ -6,8 +6,13 @@ using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Skapa logger tidigt
-var logger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Program");
+// Konfigurera logging med Azure App Service diagnostics och Console
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddAzureWebAppDiagnostics();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+var logger = builder.Logging.CreateLogger("Program");
 
 logger.LogInformation("Program.cs start - innan Key Vault laddning");
 

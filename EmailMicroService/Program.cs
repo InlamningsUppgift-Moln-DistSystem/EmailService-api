@@ -1,31 +1,29 @@
 ﻿using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
-using EmailMicroService.Services; // ← namespace för listenern
+using EmailMicroService.Services;
 using EmailService.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.AzureAppServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Konfigurera logging med Azure App Service diagnostics och Console
+// --- LOGGING KONFIGURATION ---
+// Rensa gamla providers och lägg till Console + Azure App Service Diagnostics (log stream)
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddAzureWebAppDiagnostics();
 builder.Logging.SetMinimumLevel(LogLevel.Information);
 
-var loggerFactory = LoggerFactory.Create(logging =>
+var logger = LoggerFactory.Create(logging =>
 {
     logging.AddConsole();
     logging.AddAzureWebAppDiagnostics();
     logging.SetMinimumLevel(LogLevel.Information);
-});
-
-var logger = loggerFactory.CreateLogger("Program");
-
+}).CreateLogger("Program");
 
 logger.LogInformation("Program.cs start - innan Key Vault laddning");
 
-// 1. Key Vault – ladda in känsliga värden
+// --- KEY VAULT KONFIGURATION ---
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
 logger.LogInformation("KeyVaultUrl från konfiguration: {KeyVaultUrl}", keyVaultUrl);
 
@@ -33,7 +31,7 @@ builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCre
 
 logger.LogInformation("Key Vault laddad");
 
-// 2. För debug/loggning
+// --- KONFIGURATION AV SERVICE ---
 string apiKey = builder.Configuration["SendGrid--ApiKey"];
 string fromEmail = builder.Configuration["SendGrid--From"];
 string fromName = builder.Configuration["SendGrid--FromName"];
@@ -42,13 +40,13 @@ logger.LogInformation("🔐 SendGrid--ApiKey is {Status}", string.IsNullOrEmpty(
 logger.LogInformation("🔐 SendGrid--From: {FromEmail}", fromEmail);
 logger.LogInformation("🔐 SendGrid--FromName: {FromName}", fromName);
 
-// 3. Dependency Injection
+// --- Dependency Injection ---
 builder.Services.AddScoped<IEmailSender, EmailSender>();
-builder.Services.AddHostedService<EmailQueueListener>(); // 👈 Service Bus listener
+builder.Services.AddHostedService<EmailQueueListener>();
 
 logger.LogInformation("Tjänster registrerade");
 
-// 4. CORS – tillåt alla origins (just nu)
+// --- CORS ---
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -59,7 +57,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 5. Swagger och Controllers
+// --- Controllers & Swagger ---
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -88,7 +86,6 @@ logger.LogInformation("Middleware konfigurerat");
 app.MapControllers();
 
 logger.LogInformation("MapControllers anropat");
-
 logger.LogInformation("App started");
 
 app.Run();

@@ -8,57 +8,34 @@ using Microsoft.Extensions.Logging.AzureAppServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- LOGGNING KONFIGURATION ---
+// --- LOGGNING ---
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddAzureWebAppDiagnostics();
-builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.AddConsole();       // Terminalen (och Azure)
+builder.Logging.AddDebug();         // Visual Studio → Output (Debug)
+builder.Logging.AddAzureWebAppDiagnostics(); // För Azure
+builder.Logging.SetMinimumLevel(LogLevel.Trace); // Visa allt från Trace och uppåt
 
-var logger = LoggerFactory.Create(logging =>
-{
-    logging.AddConsole();
-    logging.AddAzureWebAppDiagnostics();
-    logging.SetMinimumLevel(LogLevel.Information);
-}).CreateLogger("Program");
+// --- TEST: DEBUG TRACE via System.Diagnostics ---
+System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Out));
+System.Diagnostics.Trace.AutoFlush = true;
+System.Diagnostics.Trace.WriteLine("🟠 System.Diagnostics.Trace is active");
 
-logger.LogInformation("Program.cs start - innan Key Vault laddning");
-
-// --- KEY VAULT KONFIGURATION ---
-// Läs in Key Vault URL från appsettings eller miljövariabler
+// --- KEY VAULT ---
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
-logger.LogInformation("KeyVaultUrl från konfiguration: {KeyVaultUrl}", keyVaultUrl);
-
-// Lägg till Key Vault som konfigurationskälla
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-logger.LogInformation("Key Vault laddad");
-
-// --- KONFIGURATION AV SERVICE ---
-// Läs in känsliga data från konfiguration (Key Vault)
+// --- KONFIGURATION AV SECRETS ---
 string apiKey = builder.Configuration["SendGrid--ApiKey"];
 string fromEmail = builder.Configuration["SendGrid--From"];
 string fromName = builder.Configuration["SendGrid--FromName"];
 string blobConnectionString = builder.Configuration["BlobConnectionString"];
 
-logger.LogInformation("🔐 SendGrid--ApiKey is {Status}", string.IsNullOrEmpty(apiKey) ? "MISSING" : "LOADED");
-logger.LogInformation("🔐 SendGrid--From: {FromEmail}", fromEmail);
-logger.LogInformation("🔐 SendGrid--FromName: {FromName}", fromName);
-logger.LogInformation("🔐 BlobConnectionString is {Status}", string.IsNullOrEmpty(blobConnectionString) ? "MISSING" : "LOADED");
-
 // --- DEPENDENCY INJECTION ---
-// Registrera BlobServiceClient som singleton (thread-safe)
 builder.Services.AddSingleton(new BlobServiceClient(blobConnectionString));
-
-// Registrera IEmailSender som scoped (kan vara singleton om inga scoped resurser behövs)
 builder.Services.AddScoped<IEmailSender, EmailSender>();
-
-// Registrera EmailQueueListener som hosted service (singleton)
 builder.Services.AddHostedService<EmailQueueListener>();
 
-logger.LogInformation("Tjänster registrerade");
-
 // --- CORS ---
-// Tillåt alla origin, headers och metoder (kan justeras efter behov)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -69,17 +46,24 @@ builder.Services.AddCors(options =>
     });
 });
 
-// --- CONTROLLERS & SWAGGER ---
+// --- CONTROLLERS + SWAGGER ---
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-logger.LogInformation("Bygger app");
-
-// --- BUILD APP ---
 var app = builder.Build();
 
-logger.LogInformation("App byggd - innan Middleware pipeline");
+// --- LOGGER ---
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("🚀 EmailService startup complete");
+logger.LogInformation("🔐 KeyVault URL: {Url}", keyVaultUrl);
+logger.LogInformation("🔐 SendGrid ApiKey status: {Status}", string.IsNullOrEmpty(apiKey) ? "MISSING" : "LOADED");
+logger.LogInformation("🔐 FromEmail: {From}", fromEmail ?? "(null)");
+logger.LogInformation("🔐 BlobConnectionString status: {Status}", string.IsNullOrEmpty(blobConnectionString) ? "MISSING" : "LOADED");
+
+logger.LogInformation("✅ Middleware pipeline klar – appen är redo att ta emot trafik");
+Console.WriteLine("🧪 TEST: Console.WriteLine syns också");
+System.Diagnostics.Debug.WriteLine("🔧 Detta går till Debug-fönstret i VS");
 
 // --- MIDDLEWARE ---
 app.UseSwagger();
@@ -89,19 +73,9 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-logger.LogInformation("Swagger UI satt");
-
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthorization();
-
-logger.LogInformation("Middleware konfigurerat");
-
-// --- ROUTING ---
 app.MapControllers();
 
-logger.LogInformation("MapControllers anropat");
-logger.LogInformation("App started");
-
-// --- STARTA APPEN ---
 app.Run();

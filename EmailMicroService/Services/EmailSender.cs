@@ -31,15 +31,18 @@ namespace EmailService.Services
                 throw new Exception("❌ Missing SendGrid configuration values from Key Vault.");
             }
         }
-
-        public async Task SendEmailAsync(string to, string subject, string body)
+        public async Task SendEmailAsync(string to, string subject, string htmlBody)
         {
             Log($"📧 Sending email to {to} with subject: '{subject}'");
 
             var client = new SendGridClient(_apiKey);
             var from = new EmailAddress(_fromEmail, _fromName);
             var toAddress = new EmailAddress(to);
-            var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, body, body);
+
+            // Plain text version — ta bort HTML-taggar eller bygg en enklare version
+            var plainTextBody = System.Text.RegularExpressions.Regex.Replace(htmlBody, "<.*?>", string.Empty);
+
+            var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, plainTextBody, htmlBody);
 
             var response = await client.SendEmailAsync(msg);
             var responseBody = await response.Body.ReadAsStringAsync();
@@ -54,6 +57,7 @@ namespace EmailService.Services
 
             Log($"✅ Email successfully sent to {to}");
         }
+
 
         public async Task SendConfirmationEmailAsync(string to, string confirmationUrl)
         {

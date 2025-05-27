@@ -23,13 +23,18 @@ public class EmailQueueListener : BackgroundService
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("🚀 EmailQueueListener started and listening to 'email-queue'");
+
         _processor.ProcessMessageAsync += HandleMessageAsync;
         _processor.ProcessErrorAsync += ErrorHandlerAsync;
+
         return _processor.StartProcessingAsync(stoppingToken);
     }
 
+
     private async Task HandleMessageAsync(ProcessMessageEventArgs args)
     {
+
         try
         {
             var body = args.Message.Body.ToString();

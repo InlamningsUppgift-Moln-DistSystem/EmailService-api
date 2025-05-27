@@ -1,14 +1,15 @@
-﻿using EmailService.Services;
+﻿using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
-using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using EmailMicroService.Services; // ← namespace för listenern
+using EmailService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Ladda Key Vault tidigt
+// 1. Key Vault – ladda in känsliga värden
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-// Efter Key Vault
+// 2. För debug/loggning
 string apiKey = builder.Configuration["SendGrid--ApiKey"];
 string fromEmail = builder.Configuration["SendGrid--From"];
 string fromName = builder.Configuration["SendGrid--FromName"];
@@ -17,11 +18,11 @@ Console.WriteLine($"🔐 SendGrid--ApiKey is {(string.IsNullOrEmpty(apiKey) ? "M
 Console.WriteLine($"🔐 SendGrid--From: {fromEmail}");
 Console.WriteLine($"🔐 SendGrid--FromName: {fromName}");
 
-
-// 2. Lägg till EmailSender – använder IConfiguration direkt
+// 3. Dependency Injection
 builder.Services.AddScoped<IEmailSender, EmailSender>();
+builder.Services.AddHostedService<EmailQueueListener>(); // 👈 Service Bus listener
 
-// 3. Lägg till CORS (öppet för externa API-anrop)
+// 4. CORS – tillåt alla origins (just nu)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -32,14 +33,14 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 4. Swagger och Controllers
+// 5. Swagger och Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// 6. Bygg app och konfigurera middleware
 var app = builder.Build();
 
-// 5. Middleware pipeline
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

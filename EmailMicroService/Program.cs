@@ -13,7 +13,7 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();       // Terminalen (och Azure)
 builder.Logging.AddDebug();         // Visual Studio → Output (Debug)
 builder.Logging.AddAzureWebAppDiagnostics(); // För Azure
-builder.Logging.SetMinimumLevel(LogLevel.Trace); // Visa allt från Trace och uppåt
+builder.Logging.SetMinimumLevel(LogLevel.Information);  // Visa allt från Trace och uppåt
 
 // --- TEST: DEBUG TRACE via System.Diagnostics ---
 System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Out));

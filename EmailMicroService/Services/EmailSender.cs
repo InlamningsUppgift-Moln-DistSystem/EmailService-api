@@ -58,7 +58,7 @@ namespace EmailService.Services
             Log($"✅ Email successfully sent to {to}");
         }
 
-
+        //Not using on bus
         public async Task SendConfirmationEmailAsync(string to, string confirmationUrl)
         {
             var userName = to.Split('@')[0]; // basic fallback

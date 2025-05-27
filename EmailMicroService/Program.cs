@@ -10,12 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- LOGGNING ---
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();       // Terminalen (och Azure)
-builder.Logging.AddDebug();         // Visual Studio → Output (Debug)
-builder.Logging.AddAzureWebAppDiagnostics(); // För Azure
-builder.Logging.SetMinimumLevel(LogLevel.Debug); // Visa allt från Trace och uppåt
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.AddAzureWebAppDiagnostics();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-// --- TEST: DEBUG TRACE via System.Diagnostics ---
 System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Out));
 System.Diagnostics.Trace.AutoFlush = true;
 System.Diagnostics.Trace.WriteLine("🟠 System.Diagnostics.Trace is active");
@@ -33,7 +32,8 @@ string blobConnectionString = builder.Configuration["BlobConnectionString"];
 // --- DEPENDENCY INJECTION ---
 builder.Services.AddSingleton(new BlobServiceClient(blobConnectionString));
 builder.Services.AddScoped<IEmailSender, EmailSender>();
-builder.Services.AddHostedService<EmailQueueListener>();
+builder.Services.AddHostedService<EmailQueueListener>(); // Lyssnar på Service Bus
+builder.Services.AddHostedService<ServiceBusListener>(); // 🔄 Ny permanent bakgrundsprocessor
 
 // --- CORS ---
 builder.Services.AddCors(options =>

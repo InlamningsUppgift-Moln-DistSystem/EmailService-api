@@ -34,6 +34,7 @@ builder.Services.AddSingleton(new BlobServiceClient(blobConnectionString));
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddHostedService<EmailQueueListener>(); // Lyssnar på Service Bus
 builder.Services.AddHostedService<ServiceBusListener>(); // 🔄 Ny permanent bakgrundsprocessor
+builder.Services.AddHostedService<SelfPingService>();
 
 // --- CORS ---
 builder.Services.AddCors(options =>

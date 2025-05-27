@@ -3,6 +3,7 @@ using Azure.Identity;
 using EmailMicroService.Services; // ← namespace för listenern
 using EmailService.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.AzureAppServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,15 @@ builder.Logging.AddConsole();
 builder.Logging.AddAzureWebAppDiagnostics();
 builder.Logging.SetMinimumLevel(LogLevel.Information);
 
-var logger = builder.Logging.CreateLogger("Program");
+var loggerFactory = LoggerFactory.Create(logging =>
+{
+    logging.AddConsole();
+    logging.AddAzureWebAppDiagnostics();
+    logging.SetMinimumLevel(LogLevel.Information);
+});
+
+var logger = loggerFactory.CreateLogger("Program");
+
 
 logger.LogInformation("Program.cs start - innan Key Vault laddning");
 

@@ -1,4 +1,5 @@
-﻿using EmailService.DTOs;
+﻿using EmailMicroService.DTOs;
+using EmailService.DTOs;
 using EmailService.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -64,5 +65,42 @@ public class EmailController : ControllerBase
             FromName = string.IsNullOrEmpty(fromName) ? "⚠️ Empty (defaulting to 'EmailService')" : fromName
         });
     }
+
+    //For the contact form
+    [HttpPost("send-contact-message")]
+    public async Task<IActionResult> SendContactMessage([FromBody] ContactMessageDto message)
+    {
+        if (string.IsNullOrWhiteSpace(message.Email) ||
+            string.IsNullOrWhiteSpace(message.Name) ||
+            string.IsNullOrWhiteSpace(message.Message))
+        {
+            return BadRequest("Name, email, and message are all required.");
+        }
+
+        try
+        {
+            var formattedBody = $"""
+        <p><strong>From:</strong> {message.Email}</p>
+        <p><strong>Name:</strong> {message.Name}</p>
+        <p><strong>Message:</strong></p>
+        <p>{message.Message}</p>
+        """;
+
+            await _emailSender.SendEmailAsync(
+                to: "kevin.swardh@utb.ecutbildning.se",
+                subject: "New Contact Form Message",
+                body: formattedBody
+            );
+
+            return Ok("Message sent.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Failed to send contact message: {ex.Message}");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+
 
 }
